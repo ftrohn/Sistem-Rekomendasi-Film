@@ -244,8 +244,36 @@ class MoviaApp(tk.Tk):
     def _save_to_csv(self):
         save_movies(self.data_file, self.movies)
 
-    
+    def _do_recommend(self):
+        genre = self._genre_var.get().strip()
+        year_s = self._year_var.get().strip()
+        rate_s = self._rating_var.get().strip()
 
-        
+        if not genre:
+            massagebox.showwarning("Input", "Masukkan genre untuk rekomendasi.")
+            return
+        try:
+            min_year = int(year_s) if year_s else 0
+        except ValueError:
+            messagebox.showerror("Error", "Tahun harus angka."); return
+        try:
+            min_rating = float(rate_s) if rate_s else 0.0
+        except ValueError:
+            messagebox.showerror("Error", "Rating harus angka."); return
 
-    
+        result = recommend_movies(self.movies, genre, min_year, min_rating)
+        if not result:
+            messagebox.showinfo("Hasil", "Tidak ada film yang cocok.")
+        self._refresh_table(result)
+
+    def _do_reset(self):
+        self._genre_var.set("")
+        self._year_var.set("")
+        self._rating_var.set("")
+        self._refresh_table(self.movies)
+
+     def _sort_rating(self):
+        self._refresh_table(quick_sort_rating(self.movies))
+
+    def _sort_year(self):
+        self._refresh_table(quick_sort_year(self.movies))
