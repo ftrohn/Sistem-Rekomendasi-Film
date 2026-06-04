@@ -177,6 +177,19 @@ class MoviaApp(tk.Tk):
         vsb.pack(side='right', fill='y')
         self.tree.pack(fill='both', expand=True)
 
+        right=ttk.Frame(main_frame)
+        right.pack(side='right', fill='y', padx=(10,0))
+
+        crud_f = ttk.LabelFrame(right, text="CRUD FILM", padding=8)
+        crud_f.pack(fill='x', pady=(0, 8))
+        btn_defs = [
+            (" Tambah Film", self._crud_add),
+            (" Ubah Film", self._crud_update),
+            (" Hapus Film", self._crud_delete),
+        ]
+        for txt, cmd in btn_defs:
+        
+
         
 
     
