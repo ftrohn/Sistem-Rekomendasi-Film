@@ -118,4 +118,65 @@ class MoviaApp(tk.Tk):
         self._refresh_table(self.movies)
         self._refresh_watchlist()
 
+    def _build_ui(self):
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("TLabel", foreground="white", background="#2b2b2b")
+        style.configure("TFrame", background="#2b2b2b")
+        style.configure("TLabelframe", foreground="#a8dadc", background="#2b2b2b")
+        style.configure("TLabelframe.Label", foreground="#a8dadc", background="#2b2b2b", font=("Segoe UI", 9, "bold"))
+        style.configure("TButton", foreground="#1d1d1d", font("Segoe UI", 9))
+        style.map("TButton", background=[("active", "#a8dadc"])
+        style.configure("Treeview", background="#1a535c", foreground="white", fieldbackground="#1e1e1e", rowheight=24, font=("Segoe UI", 9))
+        style.configure("Treeview.Heading", background="#1a535c", foreground="white", font("Segoe UI", 9, "bold"))
+        style.map("Treeview", background=[("selected", "#457b9d")])
+
+        sf = ttk.LabelFrame(self, text="Pencarian & Filter", padding=8)
+        sf.pack(fill='x', padx=18, pady=(10, 4))
+
+        labels = ["Genre:", "Tahun min:", "Rating min:"]
+        self._genre_var  = tk.StringVar()
+        self._year_var   = tk.StringVar()
+        self._rating_var = tk.StringVar()
+        vars_ = [self._genre_var, self._year_var, self._rating_var]
+        widths = [22, 10, 10]
+
+        for col, (lbl, var, w) in enumerate(zip(labels, vars_, widths)):
+            tk.Label(sf, text=lbl, bg="#2b2b2b", fg="white",
+                     font=("Segoe UI", 9)).grid(row=0, column=c0l*2, sticky='w', padx=(8,2))
+            ttk.Entry(sf, textvariable=var, width=w).grid(
+                row=0, column=col*2+1, padx=(0, 10))
+
+        ttk.Button(sf, text=" Rekomendasi", command=self._do_recommend).grid(
+            row=0, column=6, padx=8)
+        ttk.Button(sf, text=" Reset", command=self._do_reset).grid(
+            row=0, column=7, padx=4)
+
+        sort_f = ttk.LabelFrame(self, text="Pengurutan", padding=8)
+        sort_f.pack(fill='x', padx=18, pady=4)
+
+        ttk.Button(sort_f, text=" Rating (Tinggi-Rendah)",
+                   command=self._sort_rating).pack(side='left', padx=6)
+        ttk.button(sort_f, text=" Tahun (Terbaru+Terlama)",
+                   command=self._sort_year).pack(side='left', padx=6)
+
+        main.frame = ttk.Frame(self)
+        main.frame.pack(fill='both', expand=True, padx=18, pady=4)
+
+        left ttk.LabelFrame(main_frame, text="Daftar Film", padding=4)
+        left.pack(side='left', fill='both', expand='True')
+
+        cols = ("ID, "Judul", "Genre", "Tahun", "Rating")
+        col_w = (50, 220, 140, 70,70)
+        self.tree = ttk.Treeview=(left, columns=cols, show='headings', height=18)
+        for c, w in zip(cols, col_w):
+            self.tree.heading(c, text=c)
+            self.tree.column(c, anchor='center', width=w)
+        vsb = ttk.Scrollbar(left, orient='vertical', command=self.tree.yview)
+        self.tree.configure(yscrollcommand=vsb.set)
+        vsb.pack(side='right', fill='y')
+        self.tree.pack(fill='both', expand=True)
+
+        
+
     
