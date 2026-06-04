@@ -1,7 +1,7 @@
-def linear_search_genre(movies, game):
+def linear_search_genre(movies, genre):
     result = []
     for movie in movies:
-        if genre.lower() in moovie.genre.lower():
+        if genre.lower() in movie.genre.lower():
             result.append(movie)
     return result
 
