@@ -96,8 +96,8 @@ class MovieFormDialog(tk.Toplevel):
         self.result = Movie(mid, title, genre, int(year), float(rating))
         self.destroy()
 
-class MoviaApp(tk.Tk):
-    def __init__(self, data_file="film indonesia.csv):
+class MovieApp(tk.Tk):
+    def __init__(self, data_file="film indonesia.csv"):
         super().__init__()
         self.title("Sistem Rekomendasi Film Indonesia")
         self.geometry("1000x700")
@@ -125,10 +125,10 @@ class MoviaApp(tk.Tk):
         style.configure("TFrame", background="#2b2b2b")
         style.configure("TLabelframe", foreground="#a8dadc", background="#2b2b2b")
         style.configure("TLabelframe.Label", foreground="#a8dadc", background="#2b2b2b", font=("Segoe UI", 9, "bold"))
-        style.configure("TButton", foreground="#1d1d1d", font("Segoe UI", 9))
-        style.map("TButton", background=[("active", "#a8dadc"])
+        style.configure("TButton", foreground="#1d1d1d", font=("Segoe UI", 9))
+        style.map("TButton", background=[("active", "#a8dadc")])
         style.configure("Treeview", background="#1a535c", foreground="white", fieldbackground="#1e1e1e", rowheight=24, font=("Segoe UI", 9))
-        style.configure("Treeview.Heading", background="#1a535c", foreground="white", font("Segoe UI", 9, "bold"))
+        style.configure("Treeview.Heading", background="#1a535c", foreground="white", font=("Segoe UI", 9, "bold"))
         style.map("Treeview", background=[("selected", "#457b9d")])
 
         sf = ttk.LabelFrame(self, text="Pencarian & Filter", padding=8)
@@ -143,7 +143,7 @@ class MoviaApp(tk.Tk):
 
         for col, (lbl, var, w) in enumerate(zip(labels, vars_, widths)):
             tk.Label(sf, text=lbl, bg="#2b2b2b", fg="white",
-                     font=("Segoe UI", 9)).grid(row=0, column=c0l*2, sticky='w', padx=(8,2))
+                     font=("Segoe UI", 9)).grid(row=0, column=col*2, sticky='w', padx=(8,2))
             ttk.Entry(sf, textvariable=var, width=w).grid(
                 row=0, column=col*2+1, padx=(0, 10))
 
@@ -160,15 +160,15 @@ class MoviaApp(tk.Tk):
         ttk.button(sort_f, text=" Tahun (Terbaru+Terlama)",
                    command=self._sort_year).pack(side='left', padx=6)
 
-        main.frame = ttk.Frame(self)
-        main.frame.pack(fill='both', expand=True, padx=18, pady=4)
+        main_frame = ttk.Frame(self)
+        main_frame.pack(fill='both', expand=True, padx=18, pady=4)
 
-        left ttk.LabelFrame(main_frame, text="Daftar Film", padding=4)
+        left = ttk.LabelFrame(main_frame, text="Daftar Film", padding=4)
         left.pack(side='left', fill='both', expand='True')
 
-        cols = ("ID, "Judul", "Genre", "Tahun", "Rating")
+        cols = ("ID", "Judul", "Genre", "Tahun", "Rating")
         col_w = (50, 220, 140, 70,70)
-        self.tree = ttk.Treeview=(left, columns=cols, show='headings', height=18)
+        self.tree = ttk.Treeview(left, columns=cols, show='headings', height=18)
         for c, w in zip(cols, col_w):
             self.tree.heading(c, text=c)
             self.tree.column(c, anchor='center', width=w)
@@ -250,7 +250,7 @@ class MoviaApp(tk.Tk):
         rate_s = self._rating_var.get().strip()
 
         if not genre:
-            massagebox.showwarning("Input", "Masukkan genre untuk rekomendasi.")
+            messagebox.showwarning("Input", "Masukkan genre untuk rekomendasi.")
             return
         try:
             min_year = int(year_s) if year_s else 0
@@ -272,8 +272,166 @@ class MoviaApp(tk.Tk):
         self._rating_var.set("")
         self._refresh_table(self.movies)
 
-     def _sort_rating(self):
+    def _sort_rating(self):
         self._refresh_table(quick_sort_rating(self.movies))
 
     def _sort_year(self):
         self._refresh_table(quick_sort_year(self.movies))
+
+    def _crud_add(self):
+        dlg = MovieFormDialog(self, title="Tambah Film Baru")
+        if dlg.result is None:
+            return
+        new_movie = dlg.result
+        new_movie.id = generate_id(self.movies)
+        self.movies.append(new_movie)
+        self._save_to_csv()
+        self._refresh_table(self.movies)
+
+        self.crud_undo_stack.push(('add', new_movie))
+        self.crud_redo_stack = Stack()
+
+    def _crud_update(self):
+        movie = self._selected_movie()
+        if not movie:
+            messagebox.showwarning("Peringatan", "Pilih film terlebih dahulu.")
+            return
+
+        old_snapshot = Movie(movie.id, movie.title, movie.genre,
+                             movie.year, movie.rating)
+
+        dlg = MovieFormDialog(self, title="Ubah Film", movie=movie)
+        if dlg.result is None:
+            return
+
+        edited = dlg.result  # has same id
+
+        movie.title  = edited.title
+        movie.genre  = edited.genre
+        movie.year   = edited.year
+        movie.rating = edited.rating
+
+        self._save_to_csv()
+        self._refresh_table(self.movies)
+
+        self.crud_undo_stack.push(('update', old_snapshot, edited))
+        self.crud_redo_stack = Stack()
+
+    def _crud_delete(self):
+        movie = self._selected_movie()
+        if not movie:
+            messagebox.showwarning("Peringatan", "Pilih film terlebih dahulu.")
+            return
+
+        if not messagebox.askyesno("Konfirmasi",
+                                   f"Hapus film '{movie.title}'?"):
+            return
+
+        idx = self.movies.index(movie)
+        self.movies.remove(movie)
+        self._save_to_csv()
+        self._refresh_table(self.movies)
+
+        self.crud_undo_stack.push(('delete', movie, idx))
+        self.crud_redo_stack = Stack()
+
+    def _crud_undo(self):
+        if self.crud_undo_stack.is_empty():
+            messagebox.showinfo("Undo", "Tidak ada aksi CRUD untuk dibatalkan.")
+            return
+
+        action = self.crud_undo_stack.pop()
+
+        if action[0] == 'add':
+            _, movie = action
+            if movie in self.movies:
+                idx = self.movies.index(movie)
+                self.movies.remove(movie)
+                self.crud_redo_stack.push(('add', movie, idx))
+
+        elif action[0] == 'update':
+            _, old_snap, new_snap = action
+            target = next((m for m in self.movies if m.id == old_snap.id), None)
+            if target:
+                target.title  = old_snap.title
+                target.genre  = old_snap.genre
+                target.year   = old_snap.year
+                target.rating = old_snap.rating
+                self.crud_redo_stack.push(('update', old_snap, new_snap))
+
+        elif action[0] == 'delete':
+            _, movie, idx = action
+            self.movies.insert(min(idx, len(self.movies)), movie)
+            self.crud_redo_stack.push(('delete', movie, idx))
+
+        self._save_to_csv()
+        self._refresh_table(self.movies)
+    
+    def _crud_redo(self):
+        if self.crud_redo_stack.is_empty():
+            messagebox.showinfo("Redo", "Tidak ada aksi CRUD untuk diulang.")
+            return
+
+        action = self.crud_redo_stack.pop()
+
+        if action[0] == 'add':
+            _, movie, idx = action
+            self.movies.insert(min(idx, len(self.movies)), movie)
+            self.crud_undo_stack.push(('add', movie))
+
+        elif action[0] == 'update':
+            _, old_snap, new_snap = action
+            target = next((m for m in self.movies if m.id == new_snap.id), None)
+            if target:
+                target.title  = new_snap.title
+                target.genre  = new_snap.genre
+                target.year   = new_snap.year
+                target.rating = new_snap.rating
+                self.crud_undo_stack.push(('update', old_snap, new_snap))
+
+        elif action[0] == 'delete':
+            _, movie, idx = action
+            if movie in self.movies:
+                self.movies.remove(movie)
+                self.crud_undo_stack.push(('delete', movie, idx))
+
+        self._save_to_csv()
+        self._refresh_table(self.movies)
+
+    def _wl_add(self):
+        movie = self._selected_movie()
+        if not movie:
+            messagebox.showwarning("Peringatan", "Pilih film terlebih dahulu.")
+            return
+        self.watchlist.enqueue(movie)
+        self._refresh_watchlist()
+
+        self.wl_undo_stack.push(('wl_add', movie))
+        self.wl_redo_stack = Stack()
+
+    def _wl_undo(self):
+        if self.wl_undo_stack.is_empty():
+            messagebox.showinfo("Undo", "Tidak ada aksi watchlist untuk dibatalkan.")
+            return
+        action = self.wl_undo_stack.pop()
+        if action[0] == 'wl_add':
+            _, movie = action
+            if movie in self.watchlist.items:
+                self.watchlist.items.remove(movie)
+            self._refresh_watchlist()
+            self.wl_redo_stack.push(('wl_add', movie))
+
+    def _wl_redo(self):
+        if self.wl_redo_stack.is_empty():
+            messagebox.showinfo("Redo", "Tidak ada aksi watchlist untuk diulang.")
+            return
+        action = self.wl_redo_stack.pop()
+        if action[0] == 'wl_add':
+            _, movie = action
+            self.watchlist.enqueue(movie)
+            self._refresh_watchlist()
+            self.wl_undo_stack.push(('wl_add', movie))
+
+if __name__ == "__main__":
+    app = MovieApp()
+    app.mainloop()
