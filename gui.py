@@ -179,16 +179,72 @@ class MoviaApp(tk.Tk):
 
         right=ttk.Frame(main_frame)
         right.pack(side='right', fill='y', padx=(10,0))
-
-        crud_f = ttk.LabelFrame(right, text="CRUD FILM", padding=8)
+        
+        crud_f = ttk.LabelFrame(right, text="CRUD Film", padding=8)
         crud_f.pack(fill='x', pady=(0, 8))
         btn_defs = [
-            (" Tambah Film", self._crud_add),
-            (" Ubah Film", self._crud_update),
-            (" Hapus Film", self._crud_delete),
+            ("➕ Tambah Film",  self._crud_add),
+            ("✏️  Ubah Film",   self._crud_update),
+            ("🗑️  Hapus Film",  self._crud_delete),
         ]
         for txt, cmd in btn_defs:
-        
+            ttk.Button(crud_f, text=txt, width=20, command=cmd).pack(
+                fill='x', pady=3)
+
+        crud_ur = ttk.LabelFrame(right, text="Undo / Redo CRUD", padding=8)
+        crud_ur.pack(fill='x', pady=(0, 8))
+        ttk.Button(crud_ur, text="↩ Undo CRUD", width=20,
+                   command=self._crud_undo).pack(fill='x', pady=3)
+        ttk.Button(crud_ur, text="↪ Redo CRUD", width=20,
+                   command=self._crud_redo).pack(fill='x', pady=3)
+
+        wl_ctrl = ttk.LabelFrame(right, text="Daftar Tonton", padding=8)
+        wl_ctrl.pack(fill='x', pady=(0, 8))
+        ttk.Button(wl_ctrl, text="📌 Tambah ke Watchlist", width=20,
+                   command=self._wl_add).pack(fill='x', pady=3)
+
+        wl_ur = ttk.LabelFrame(right, text="Undo / Redo Watchlist", padding=8)
+        wl_ur.pack(fill='x', pady=(0, 8))
+        ttk.Button(wl_ur, text="↩ Undo Watchlist", width=20,
+                   command=self._wl_undo).pack(fill='x', pady=3)
+        ttk.Button(wl_ur, text="↪ Redo Watchlist", width=20,
+                   command=self._wl_redo).pack(fill='x', pady=3)
+
+        wl_box_f = ttk.LabelFrame(right, text="Antrean Tonton", padding=4)
+        wl_box_f.pack(fill='both', expand=True)
+        self.wl_box = tk.Listbox(wl_box_f, bg="#1e1e1e", fg="#a8dadc",
+                                  selectbackground="#457b9d",
+                                  font=("Segoe UI", 9), height=8)
+        self.wl_box.pack(fill='both', expand=True)
+
+        tk.Label(self, text="© 2026 Sistem Rekomendasi Film Indonesia",
+                 bg="#2b2b2b", fg="#666", font=("Segoe UI", 8)).pack(
+            side='bottom', pady=4)
+
+    def _refresh_table(self, movies):
+        self.tree.delete(*self.tree.get_children())
+        for m in movies:
+            self.tree.insert('', 'end', values=(m.id, m.title, m.genre,
+                                                 m.year, m.rating))
+
+    def _refresh_watchlist(self):
+        self.wl_box.delete(0, tk.END)
+        for m in self.watchlist.items:
+            self.wl_box.insert(tk.END, f"{m.title} ({m.year})  ★{m.rating}")
+
+    def _selected_movie(self):
+        """Return Movie object for the selected Treeview row, or None."""
+        sel = self.tree.focus()
+        if not sel:
+            return None
+        vals = self.tree.item(sel, 'values')
+        mid = int(vals[0])
+        return next((m for m in self.movies if m.id == mid), None)
+
+    def _save_to_csv(self):
+        save_movies(self.data_file, self.movies)
+
+    
 
         
 
