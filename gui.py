@@ -95,3 +95,27 @@ class MovieFormDialog(tk.Toplevel):
         mid = self._movie_id if self._movie_id is not None else -1
         self.result = Movie(mid, title, genre, int(year), float(rating))
         self.destroy()
+
+class MoviaApp(tk.Tk):
+    def __init__(self, data_file="film indonesia.csv):
+        super().__init__()
+        self.title("Sistem Rekomendasi Film Indonesia")
+        self.geometry("1000x700")
+        self.minsize(860, 600)
+        self.configure(bg="#2b2b2b")
+
+        self.data_file = data_file
+        self.movies    = load_movies(self.data_file)
+
+        self.watchlist     = Queue()
+        self.w1_undo_stack = Stack()
+        self.w1_redo_stack = Stack()
+
+        self.crud_undo_stack = Stack()
+        self.crud_redo_stack = Stack()
+
+        self._build_ui(self)
+        self._refresh_table(self.movies)
+        self._refresh_watchlist()
+
+    
